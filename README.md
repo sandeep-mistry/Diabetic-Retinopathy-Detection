@@ -14,3 +14,12 @@ Our task is to create a system able to assign a score to new test images based o
 pip install -r requirements.txt
 ```
 # Usage
+
+Clone repository.
+
+Download weights.tar.gz file from [here](https://drive.google.com/file/d/1nE1eZL-TvlJSalmm1Z_NXEw-qoicEEfj/view?usp=sharing) and extract to 'weights' folder in repository.
+
+Set train and test directories in chosen classification model script.
+```
+python [model].py e.g. RandomForest.py
+```
