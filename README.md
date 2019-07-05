@@ -1,5 +1,7 @@
 # Diabetic Retinopathy Detection Kaggle Competition
 
+# Introduction
+
 We are given a large set of high-resolution retina images. 
 A left and right field is provided for every subject. 
 A clinician has rated the presence of diabetic retinopathy in each training image on a scale from 0 to 4, 
