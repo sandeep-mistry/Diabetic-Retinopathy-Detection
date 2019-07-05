@@ -1,0 +1,5 @@
+Paper Notes
+
+Montavon_2018 - Techniques for analysing DNNs, uses the MNIST dataset.
+Wan_2018      - CNN for DR using transfer learning with pre-trained models.
+Zhang_2018    - Different CNN model to produce more interpretable results.

@@ -1,0 +1,36 @@
+- Use data preprocessing and augmentation techniques
+- Increases effective dataset sample size
+- Trained and tested 2 CNN architectures: AlexNet & GoogLeNet
+- Use batch normalisation, L2 regularisation, dropout
+- Used Kaggle dataset and physician-verified Messidor-1 dataset (1200 colour images with 4 class labels)
+- CNN has difficulty discerning very small lesions
+- Can use k-NN, SVM, ensembled-based methods
+- Kaggle dataset has contains larger proportion of uninterpretable images than Messidor-1 due to fault labeling and poor quality
+- Used smaller, but more ideal dataset for learning features
+- Final model implemented in TensorFlow and influenced by results from deep learning GPU interactive training system (DIGITS)
+- Particular focus on GoogLeNet (22 layers)
+- First layer may learn edges, whilst deepest layer learns to interpret particular DR classification feature
+- Dropout of network layers until reaching dense five-node output layer
+- Used softmax activation function
+- Cross entropy computer error loss
+- Xavier method for intialising weights
+
+PREPROCESSING
+
+- Images cropped using Otsu's method to isolate retina
+- Normalisation by subtracting min pixel intensity from each channel and dividing by mean pixel intensity
+- Contrast adjustment using Contrast Limited Adaptive Histogram Equalisation (CLAHE) method
+
+DATA AUGMENTATION
+
+- Images augmented in real-time to improve network localisation capability and reduce overfitting
+- Random padding with zeroes
+- Zoom, rolling, and rotation
+
+
+
+- Images cropped to 256x256
+- GoogLeNet achieved highest sensitivity (95%) and 96% using real time augmentation and preprocessing
+- Unable to achieve significant sensitivity levels for mild case, using Kaggle dataset
+- Performance limited by inability of CNNs to detect very subtle features
+- Data fidelity (quality) has strong impact on multi-class training model performance

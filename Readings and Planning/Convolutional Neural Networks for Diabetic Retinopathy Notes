@@ -1,0 +1,27 @@
+- SVMs and k-NN used as automated methods for this porblem. 
+- dropout important for preventing over fitting
+- ImageNet & COCO challenge
+- Sensitivity & Specificity
+- Specificity: no. of patients correctly identified as not having DR our of the true total amount not having DR
+- Sensitivity: no. of patients correctly idenified as having DR our of the true total amount of having DR. 
+- Accuracy: no. of patients with a correct classification: 0,1,2,3,4
+- This dataset with a high specificity has come with a trade off of lower sensitivity. 
+- This network had a problem distinguishing between mild, moderate, and severe.
+- Data set is skewed towards most images not showing DR, we have to accommodate for this
+- Gardner et al further reading on neural networks (split image into patches before svm)
+- Feature extraction is less time friendly than a CNN
+- Increased convolution layers percieved allow network to learn deeper features e.g. last layers learns features of hard exudate
+- Max Pooling performed with kernel 3x3 and 2x2 strides. 
+- to avoid overfitting weighted class weights are used, relative to the amount of images in each class.
+- Dropout performed on dense layers. until classification layer which uses softmax.
+- leaky rectified linear unit activation function used to stop over reliance on certain nodes. 
+- L2 reg used for weight and bisases in convolution layers.
+- network initialised using gaussian initialisation.
+- Loss function was categorical cross entropy. 
+- Images were resized. 512x512
+- Keras deep learning package was used with Theano machine learning back end. 
+- Images preprocessed by colour normalisation with opencv. 
+- network trained with SGD using Nestrov momentum.
+- learning rate lowered by a factor of 10 every time training loss and accuracy "saturated"
+- 10% of images in data set deemed ungradable by uk standards. 
+- this method does not specifically make any use of features associated with DR. 

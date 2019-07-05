@@ -1,0 +1,2 @@
+#!/bin/bash
+python3 CNNDR.py --alexnet --train --epochs 10 --lr 0.0001 --L2 0.0005 --batch_size 32 --test_images test_sub/ --train_images train_sub/ --test_csv test.csv --train_csv train.csv --save_weights_name weights/temp_weights --load_weights_name weights/AlexNetFT

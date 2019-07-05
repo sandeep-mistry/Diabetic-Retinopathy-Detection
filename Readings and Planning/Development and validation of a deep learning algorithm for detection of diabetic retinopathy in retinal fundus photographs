@@ -1,0 +1,14 @@
+- Deep CNN
+- Different dataset used in this paper
+- This algorithm had high sensitivity and specificity for detecing diabetic retinopathy and macular edema in retinal fundus photographs
+- parameters initially set to random values
+- learned from pixel intensities
+- comines nearby pixels into local features athen aggregates those into global features. 
+- doesnt explicitly detect lesions.
+Inception-v3 architecture proposed by Scegdy et al.
+- preprocessed the data
+- optimization algorithm to train weights was a distributed sgd implementation by Dean et al. 
+- sped up training using batch normalisation, and preinitialised weights from the same networkd trained to classify objectsin the imagenet data set. 
+- performance measured under AUC plotting 1-specificity vs snesitivity. 
+- training stopped when peak auc is reached on a seperate tuning set.
+- an ensemble of 2- networks trained on the same data was used, and the final prediction was computed by a linear average over the preditcions of the ensemble. 
