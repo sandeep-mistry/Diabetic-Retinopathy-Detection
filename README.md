@@ -8,6 +8,8 @@ A clinician has rated the presence of diabetic retinopathy in each training imag
 where 0 indicates no diabetic retinopathy detected and 4 indicates proliferative diabetic retinopathy detected. 
 Our task is to create a system able to assign a score to new test images based on this scale.
 
+Link to competition: https://www.kaggle.com/c/diabetic-retinopathy-detection
+
 
 # Requirements
 ```
