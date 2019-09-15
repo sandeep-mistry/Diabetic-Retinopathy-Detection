@@ -4,7 +4,6 @@ import torchvision.models as models
 import torchvision.transforms as transforms
 from torch import optim, nn
 from torch.utils.data import DataLoader
-
 from RetDataset import RetDataset
 
 num_epochs = 10

@@ -3,7 +3,6 @@ import torchvision.transforms as transforms
 from RetDataset import RetDataset
 from PIL import Image
 
-
 transform = transforms.Compose([
     transforms.RandomHorizontalFlip(),
     transforms.ColorJitter(
@@ -26,6 +25,3 @@ toimage = transforms.ToPILImage()
 output = toimage(input[0])
 print(output)
 output.show()
-# input = input.numpy()[0]
-# img = Image.fromarray(input.T, 'RGB')
-# img.show()

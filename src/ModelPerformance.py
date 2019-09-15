@@ -155,15 +155,13 @@ for i in range(5):
         input = torch.Tensor([data.__getitem__(idx)[0].tolist()]).to(device)
         prediction = model.forward(input)
         # cm[i][np.argmax(prediction.cpu().detach().numpy())] += 1  # need to call detach or problems with gradients will occur
-        predictions.append(np.argmax(prediction.cpu().detach().numpy())) # need to call detach or problems with gradients will occur
+        predictions.append(
+            np.argmax(prediction.cpu().detach().numpy()))  # need to call detach or problems with gradients will occur
 
         feature = feature_extractor.forward(input)
         feature = feature.view(feature.size(0), -1)
         feature_vectors.append(feature.tolist()[0])
         targets.append(data.__getitem__(idx)[1])
-
-# print accuracy, sensitivity, and specificity
-# print(accuary_metrics(cm))
 
 print(classification_report(predictions, targets))
 

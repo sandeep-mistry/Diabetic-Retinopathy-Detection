@@ -1,5 +1,4 @@
 import argparse
-
 import torch
 import torchvision
 import torchbearer
@@ -9,24 +8,16 @@ from torch.autograd import Variable
 import torchvision.transforms as transforms
 from torch import optim, nn
 from torch.utils.data import DataLoader
-
-# For displaying images and numpy operations
-import matplotlib.pyplot as plt
 import numpy as np
-
-
+from sklearn.metrics import accuracy_score, cohen_kappa_score, confusion_matrix, f1_score
 from RetCNN import RetCNN, RetResNet
 from RetDataset import RetDataset
-
-from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.datasets import make_classification
 from sklearn.externals import joblib
-from sklearn.metrics import accuracy_score, cohen_kappa_score, confusion_matrix, f1_score
+from sklearn.ensemble import RandomForestClassifier
 
-
-
-cuda_used = "cuda:1"
-
+cuda_used = "cuda:0"
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--train', action='store_true', help='Perform training')
@@ -52,16 +43,17 @@ parser.add_argument('--pretrained', action='store_true', help='Use pretrained ne
 parser.add_argument('--freezepretrained', action='store_true', help='freeze the pretrained network?')
 parser.add_argument('--transform', type=int, help='Specific transform to use')
 
+
 def set_parameter_requires_grad(model, feature_extracting):
     if feature_extracting:
         for param in model.parameters():
             param.requires_grad = False
 
+
 args = parser.parse_args()
 
 classes = ('0', '1', '2', '3',
            '4')
-
 
 load_weights = False
 save_weights = False
@@ -73,20 +65,17 @@ if (args.save_weights_name != None):
 
 # use the dataset to get train and test batches.
 
-if args.transform == 1 :
-    transform = transforms.Compose([
-        transforms.ToTensor()])
-
-if args.transform == 2:
-    transform = transforms.Compose([
-        transforms.ToTensor()])
-        
-elif args.transform == 3:
+if args.transform == 1:
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225])])
+                             std=[0.229, 0.224, 0.225])])
 
+elif args.transform == 2:
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                             std=[0.229, 0.224, 0.225])])
 
 train_set = RetDataset(args.train_csv, args.train_images, transform=transform)
 test_set = RetDataset(args.test_csv, args.test_images, transform=transform)
@@ -104,6 +93,10 @@ else:
 if args.alexnet:
     print("Using Alexnet")
     model = models.alexnet(pretrained=args.pretrained) if args.pretrained else models.alexnet()
+    # set_parameter_requires_grad(model, args.freezepretrained)
+    num_ftrs = model.classifier[6].in_features
+    model.classifier[6] = nn.Linear(num_ftrs, 5)
+
 
 
 elif args.inception:
@@ -113,7 +106,8 @@ elif args.inception:
 elif args.vgg:
     print("Using VGG 11 with BN")
     model = models.vgg11_bn(pretrained=args.pretrained)
-
+    num_ftrs = model.classifier[6].in_features
+    model.classifier[6] = nn.Linear(num_ftrs, 5)
 
 elif args.resnet:
     print("Using Resnet 18")
@@ -129,7 +123,6 @@ else:
     print("Using RetCNN")
     model = RetCNN()
 
-
 model.to(device)
 
 if load_weights:
@@ -138,7 +131,6 @@ if load_weights:
         model.load_state_dict(torch.load(args.load_weights_name))
     else:
         model.load_state_dict(torch.load(args.load_weights_name, map_location='cpu'))
-
 
 feature_extractor_model = nn.Sequential(*list(model.children())[:-1])
 feature_extractor_model.eval()
@@ -190,9 +182,7 @@ for i, data in enumerate(testloader, 0):
         inputs, labels = Variable(inputs), Variable(labels)
 
     # extracting features
-    # _, features = model(inputs)
     features = feature_extractor_model((inputs).squeeze(3).to(device))
-
 
     if device == cuda_used:
         features = features.cpu()
@@ -211,13 +201,13 @@ for i, data in enumerate(testloader, 0):
 print('Finished feature extraction for Test Set')
 
 nsamples, rsamples, nx, ny = featureMatrix.shape
-featureMatrix = featureMatrix.reshape((nsamples,rsamples*nx*ny))
+featureMatrix = featureMatrix.reshape((nsamples, rsamples * nx * ny))
 
 nsamples, rsamples, nx, ny = featureMatrixTest.shape
-featureMatrixTest = featureMatrixTest.reshape((nsamples,rsamples*nx*ny))
+featureMatrixTest = featureMatrixTest.reshape((nsamples, rsamples * nx * ny))
 
 # Defining Random Forest Claasifier
-clf = SVC(gamma='auto', C=1.0)
+clf = RandomForestClassifier(n_estimators=1000)
 
 # Train the Random Forest using Train Set of CIFAR-10 Dataset
 clf.fit(featureMatrix, np.ravel(labelVector))
@@ -231,14 +221,13 @@ print('GroundTruth', 'Predicted')
 print('--------', '--------')
 for i in range(10):
     print(className[labelVectorTest[i]], className[labelVectorPredicted[i]])
-    
+
 accuracy = accuracy_score(labelVectorTest, labelVectorPredicted)
 f1score1 = f1_score(labelVectorTest, labelVectorPredicted, average='macro')
 f1score2 = f1_score(labelVectorTest, labelVectorPredicted, average='micro')
 f1score3 = f1_score(labelVectorTest, labelVectorPredicted, average='weighted')
 f1score4 = f1_score(labelVectorTest, labelVectorPredicted, average=None)
 qwk = cohen_kappa_score(labelVectorTest, labelVectorPredicted, weights='quadratic')
-
 
 print('Accuracy:', accuracy)
 print('F1 Score Macro:', f1score1)
@@ -247,43 +236,10 @@ print('F1 Score Weighted:', f1score3)
 print('F1 Score:', f1score4)
 print('QuadWeightedKappa:', qwk)
 
-cm = np.zeros((5, 5))
-true_dist = np.zeros(5)
-
-
-for i in range(len(labelVectorPredicted)):
-    cm[labelVectorPredicted[i]][labelVectorTest[i]] += 1
-    true_dist[labelVectorPredicted[i]] += 1
-
-for i in range(5):
-    for j in range(5):
-        cm[i][j] /= true_dist[i]
-
-cm = confusion_matrix(labelVectorTest, labelVectorPredicted)
-cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-
-fig, axis = plt.subplots(1, 1)
-plot = axis.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues, vmin=0, vmax=1)
-axis.set_title("Confusion Matrix")
-axis.set_xlabel("Predicted")
-axis.set_ylabel("Actual")
-axis.xaxis.set_ticks_position("top")
-axis.xaxis.set_label_position("top")
-plt.colorbar(plot)
-# plt.show()
-plt.savefig("SVM_confusion_matrix")
-
-
-
 correct = (labelVectorPredicted == labelVectorTest).sum()
 print('Accuracy of the network on the test images: %d %%' % (
         100 * correct / labelVectorTest.shape[0]))
 
-
-correct = (labelVectorPredicted == labelVectorTest).sum()
-print('Accuracy of the network on the test images: %d %%' % (
-        100 * correct / labelVectorTest.shape[0]))
-        
 class_correct = list(0. for i in range(5))
 class_total = list(0. for i in range(5))
 c = (labelVectorPredicted == labelVectorTest).squeeze()
@@ -291,9 +247,7 @@ for i in range(labelVectorTest.shape[0]):
     label = labelVectorTest[i]
     class_correct[label] += c[i]
     class_total[label] += 1
-    
+
 for i in range(5):
     print('Accuracy of %5s : %2d %%' % (
         classes[i], 100 * class_correct[i] / class_total[i]))
-
-print("200 estimators")

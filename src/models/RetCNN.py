@@ -12,6 +12,7 @@ cn_kernel = (3, 3)
 mp_kernel = (2, 2)
 mp_stride = (2, 2)
 
+
 class RetCNN(nn.Module):
     def __init__(self, feature=False):
         super(RetCNN, self).__init__()
@@ -87,7 +88,6 @@ class RetCNN(nn.Module):
         out = self.BN3(out)
         out = self.mp2d(out)
 
-
         out = self.conv4(out)
         out = F.leaky_relu(out)
 
@@ -122,6 +122,7 @@ class RetCNN(nn.Module):
         out = self.sm(out)
 
         return out
+
 
 class RetResNet(nn.Module):
     def __init__(self):

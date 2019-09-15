@@ -7,20 +7,23 @@ read_images = 'train/*jpeg'
 write_folder = 'processed'
 PRESENT = False
 
+
 def make_dir(directory):
     try:
         os.mkdir(directory)
     except OSError:
-        print ("Creation of the directory %s failed" % directory)
+        print("Creation of the directory %s failed" % directory)
     else:
-        print ("Successfully created the directory %s " % directory)
+        print("Successfully created the directory %s " % directory)
+
 
 # save into path directory a matrix of images, each row being an image
 def save_samples(directory, images):
     for idx in range(len(images)):
         cv2.imwrite(str(directory) + '/sample' + str(idx) + '.jpeg', images[idx])
 
-# augment imges in a directory with rotation by degrees amount
+
+# augment images in a directory with rotation by degrees amount
 def augment_rotation(folder, degrees):
     # read the images
     images = [cv2.imread(file) for file in glob.glob(folder)]
@@ -43,6 +46,7 @@ def augment_rotation(folder, degrees):
     save_samples("augment", rotated_images)
     return 0
 
+
 def image_loading(folder):
     count = 0
     resized_image = []
@@ -51,15 +55,15 @@ def image_loading(folder):
     image_crop = []
     image_sizing = []
     images = [cv2.imread(file) for file in glob.glob(folder)]
-    greyimg =[]
+    greyimg = []
     threshold = 25
 
     # converting to greyscale for cropping purposes
-    for j in range (len(images)):
+    for j in range(len(images)):
         greyimg.append(cv2.cvtColor(images[j], cv2.COLOR_BGR2GRAY))
 
     # cropping the image to get rid of extra black border
-    for j in range (len(images)): # cropping image to remove extra black borders
+    for j in range(len(images)):  # cropping image to remove extra black borders
         hStart = 0
         hEnd = greyimg[j].shape[0]
         vStart = 0
@@ -99,30 +103,27 @@ def image_loading(folder):
         image_sizing.append(cv2.resize(image_crop[j], (512, 512)))
 
     # adding left and right images together
-    for j in range (len(image_sizing)):
-        if (j%2)==0:
-            new_images.append(np.concatenate((image_sizing[j], image_sizing[j+1]), axis=1))
+    for j in range(len(image_sizing)):
+        if (j % 2) == 0:
+            new_images.append(np.concatenate((image_sizing[j], image_sizing[j + 1]), axis=1))
 
-    # resizing images to 128,128, colour normalisation and image denoising
-    for i in range (len(new_images)):
+    # resizing images to 128,128, colour normalisation and image de-noising
+    for i in range(len(new_images)):
         # height, width = new_images[i].shape[:2]
-        # print('Image height',i,height)
-        # print('Image width',i,width)
         count += 1
         resized_image.append(cv2.resize(new_images[i], (512, 512)))
-        image_norm.append(cv2.fastNlMeansDenoisingColored(cv2.normalize(resized_image[i],None, 0, 255, cv2.NORM_MINMAX)))
+        image_norm.append(
+            cv2.fastNlMeansDenoisingColored(cv2.normalize(resized_image[i], None, 0, 255, cv2.NORM_MINMAX)))
         # height0, width0 = resized_image.shape[:2]
-        # print('Image height', height0)
-        # print('Image width', width0)
-
-    print ('Total Training Images = ',count)
+    print('Total Training Images = ', count)
     return image_norm
+
 
 augment_rotation(read_images, 30)
 images = image_loading(read_images)
 
 if PRESENT:
-    for i in range (len(images)):
+    for i in range(len(images)):
         cv2.imshow("Show by CV2", images[i])
         cv2.waitKey(0)
 

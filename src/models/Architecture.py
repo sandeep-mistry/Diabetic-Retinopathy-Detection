@@ -1,7 +1,5 @@
 """
 
-DRAFT
-
 This file is intended to replicate the training of 'Convolutional Neural Networks for Diabetic Retinopathy' Frans Coenen et. al
 This includes using the network specified as well as the dynamic learning rates throughout training.
 
@@ -23,7 +21,6 @@ test_images = 'test_sub/'
 weight_decay = 0.0005       # lambda for L2 reg
 epochs = 10                # this currently, is not the same number of epochs found in the paper this implementation is a draft version.
 batch_size = 16             # small enough to not be killed by OS for taking too much memory, experiment with this value.
-                            # it might have killed the process for me because I could only run a CPU when I first wrote this.
 
 # use the dataset to get train and test batches.
 transform = transforms.Compose([
@@ -50,7 +47,6 @@ optimiser = optim.Adam(model.parameters(), weight_decay=weight_decay)
 # Construct a trial object with the model, optimiser and loss.
 # Also specify metrics we wish to compute.
 trial = torchbearer.Trial(model, optimiser, loss_function, metrics=['loss', 'accuracy']).to(device)
-#trial = torchbearer.Trial(model, optimiser, loss_function, metrics=['loss', 'accuracy'])
 # Provide the data to the trial
 trial.with_generators(trainloader, test_generator=testloader)
 

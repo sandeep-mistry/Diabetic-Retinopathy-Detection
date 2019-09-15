@@ -4,12 +4,10 @@ import torchvision.transforms as transforms
 import torchbearer
 import matplotlib.pyplot as plt
 import numpy as np
-
 from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as models
-
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from sklearn.svm import SVC
@@ -18,16 +16,10 @@ from sklearn.externals import joblib
 from RetDataset import RetDataset
 
 cuda_used = "cuda:0"
-
 train_csv = 'data/trainLabels_balanced_200.csv'
 test_csv = 'data/testLabels_balanced_200.csv'
 train_images = 'data/train_512_balanced_200/'
 test_images = 'data/test_512_balanced_200/'
-
-# train_csv = 'C:/Users/Sandeep/Desktop/Train_data/Train_Labels.csv'
-# test_csv = 'C:/Users/Sandeep/Desktop/Test_data/Test_Labels.csv'
-# train_images = 'C:/Users/Sandeep/Desktop/Train_data/Train_images'
-# test_images = 'C:/Users/Sandeep/Desktop/Test_data/Test_images'
 
 weight_decay = 0.0005  # lambda for L2 reg
 epochs = 5
@@ -43,9 +35,6 @@ def set_parameter_requires_grad(model, feature_extracting):
 
 # Define model and freeze weights
 model = models.alexnet(pretrained=True)
-# set_parameter_requires_grad(model, feature_extract)
-# num_ftrs = model.classifier[6].in_features
-# model.classifier[6] = nn.Linear(num_ftrs, 5)
 
 transform = transforms.Compose([
     transforms.RandomHorizontalFlip(),
@@ -103,13 +92,6 @@ trial = torchbearer.Trial(model, optimiser, loss_function, metrics=['loss', 'acc
 # Provide the data to the trial
 trial.with_generators(trainloader, test_generator=testloader)
 
-# Run 10 epochs of training
-# trial.run(epochs=epochs)
-#
-# # test the performance
-# results = trial.evaluate(data_key=torchbearer.TEST_DATA)
-# print(results)
-
 model.load_state_dict(torch.load("weights/weights_balanced_alex_10"))
 model.eval()
 
@@ -127,7 +109,6 @@ for i, data in enumerate(trainloader, 0):
         inputs, labels = Variable(inputs), Variable(labels)
 
     # extracting features
-    # _, features = model(inputs)
     features = model(inputs)
 
     if device == cuda_used:
@@ -160,7 +141,6 @@ for i, data in enumerate(testloader, 0):
         inputs, labels = Variable(inputs), Variable(labels)
 
     # extracting features
-    # _, features = model(inputs)
     features = model(inputs)
 
     if device == cuda_used:
@@ -179,7 +159,7 @@ for i, data in enumerate(testloader, 0):
 
 print('Finished feature extraction for Test Set')
 
-# Defining SVM Claasifier
+# Defining SVM Classifier
 clf = SVC(gamma='auto')
 # Train the SVM using Train Set of dataset
 clf.fit(featureMatrix, np.ravel(labelVector))

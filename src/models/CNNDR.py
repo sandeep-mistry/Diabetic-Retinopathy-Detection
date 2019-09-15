@@ -1,35 +1,16 @@
 import argparse
 
 import torch
-import torchvision
 import torchbearer
 import torchvision.models as models
-import torch.nn.functional as F
-from torch.autograd import Variable
 import torchvision.transforms as transforms
 from torch import optim, nn
 from torch.utils.data import DataLoader
-from sklearn.preprocessing import scale
-
-# For displaying images and numpy operations
-import matplotlib.pyplot as plt
-import numpy as np
-
 
 from RetCNN import RetCNN, RetResNet
 from RetDataset import RetDataset
-
-# Import Packages for Random Forest
-from sklearn.svm import SVC
-from sklearn.datasets import make_classification
-from sklearn.externals import joblib
-
-from sklearn.ensemble import RandomForestClassifier
-
-
-cuda_used = "cuda:0"
-
-
+from torchbearer.callbacks import EarlyStopping
+import torch.cuda as cutorch
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--train', action='store_true', help='Perform training')
@@ -55,16 +36,14 @@ parser.add_argument('--pretrained', action='store_true', help='Use pretrained ne
 parser.add_argument('--freezepretrained', action='store_true', help='freeze the pretrained network?')
 parser.add_argument('--transform', type=int, help='Specific transform to use')
 
+
 def set_parameter_requires_grad(model, feature_extracting):
     if feature_extracting:
         for param in model.parameters():
             param.requires_grad = False
 
+
 args = parser.parse_args()
-
-classes = ('0', '1', '2', '3',
-           '4')
-
 
 load_weights = False
 save_weights = False
@@ -76,7 +55,7 @@ if (args.save_weights_name != None):
 
 # use the dataset to get train and test batches.
 
-if args.transform == 1 :
+if args.transform == 1:
     transform = transforms.Compose([
         transforms.RandomHorizontalFlip(),
         transforms.ColorJitter(
@@ -89,7 +68,7 @@ if args.transform == 1 :
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
-if args.transform == 2:
+elif args.transform == 2:
     transform = transforms.Compose([
         transforms.RandomHorizontalFlip(),
         transforms.ColorJitter(
@@ -102,16 +81,6 @@ if args.transform == 2:
         transforms.ToTensor(),  # convert to tensor
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
-    
-elif args.transform == 3:
-    transform = transforms.Compose([
-        transforms.ToTensor(),  # convert to tensor
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-    
-
-    
-    
 
 train_set = RetDataset(args.train_csv, args.train_images, transform=transform)
 test_set = RetDataset(args.test_csv, args.test_images, transform=transform)
@@ -120,7 +89,7 @@ trainloader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
 testloader = DataLoader(test_set, batch_size=args.batch_size, shuffle=True)
 
 if torch.cuda.is_available():
-    device = cuda_used
+    device = "cuda:" + str(args.cuda)
     print("Running with GPU Acceleration")
 else:
     print("Running on CPU")
@@ -129,7 +98,9 @@ else:
 if args.alexnet:
     print("Using Alexnet")
     model = models.alexnet(pretrained=args.pretrained) if args.pretrained else models.alexnet()
-
+    set_parameter_requires_grad(model, args.freezepretrained)
+    num_ftrs = model.classifier[6].in_features
+    model.classifier[6] = nn.Linear(num_ftrs, 5)
 
 elif args.inception:
     print("Using Inception")
@@ -138,12 +109,16 @@ elif args.inception:
 elif args.vgg:
     print("Using VGG 11 with BN")
     model = models.vgg11_bn(pretrained=args.pretrained)
-
+    set_parameter_requires_grad(model, args.freezepretrained)
+    num_ftrs = model.classifier[6].in_features
+    model.classifier[6] = nn.Linear(num_ftrs, 5)
 
 elif args.resnet:
     print("Using Resnet 18")
     model = models.resnet18(pretrained=True)
-
+    print(args.freezepretrained)
+    set_parameter_requires_grad(model, args.freezepretrained)
+    model.fc = nn.Linear(512, 5)
 
 elif args.retresnet:
     print("Using Resnet 18 with mlp on the end")
@@ -154,7 +129,7 @@ else:
     model = RetCNN()
 
 # define the loss function and the optimiser, and weight the classes for the imbalance in our dataset such that all
- # class are equally balanced when taking account loss in mislabelling.
+# class are equally balanced when taking account loss in mislabelling.
 if not args.balanced:
     print("Loss function will compensate for imbalanced dataset!")
     label_ratios, label_counts = train_set.get_ratios()
@@ -183,106 +158,14 @@ trial = torchbearer.Trial(model, optimiser, loss_function, metrics=['loss', 'acc
 # Provide the data to the trial
 trial.with_generators(trainloader, test_generator=testloader)
 
+# Train
+if args.train:
+    trial.run(epochs=args.epochs)
+else:
+    model.eval()
 
-print('Extracting features for Train Set...')
-
-for i, data in enumerate(trainloader, 0):
-    # get the inputs
-    inputs, labels = data
-
-    # wrap them in Variable
-    if device == cuda_used:
-        inputs, labels = Variable(inputs.cuda(cuda_used)), \
-                         Variable(labels.cuda(cuda_used))
-    else:
-        inputs, labels = Variable(inputs), Variable(labels)
-
-    # extracting features
-    # _, features = model(inputs)
-    features = model(inputs)
-
-    if device == cuda_used:
-        features = features.cpu()
-        labels = labels.cpu()
-    feature = features.data.numpy()
-    label = labels.data.numpy()
-    label = np.reshape(label, (labels.size(0), 1))
-
-    if i == 0:
-        featureMatrix = np.copy(feature)
-        labelVector = np.copy(label)
-    else:
-        featureMatrix = np.vstack([featureMatrix, feature])
-        labelVector = np.vstack([labelVector, label])
-
-print('Finished feature extraction for Train Set')
-
-print('Extracting features for Test Set...')
-
-for i, data in enumerate(testloader, 0):
-    # get the inputs
-    inputs, labels = data
-
-    # wrap them in Variable
-    if device == cuda_used:
-        inputs, labels = Variable(inputs.cuda(cuda_used)), \
-                         Variable(labels.cuda(cuda_used))
-    else:
-        inputs, labels = Variable(inputs), Variable(labels)
-
-    # extracting features
-    # _, features = model(inputs)
-    features = model(inputs)
-
-    if device == cuda_used:
-        features = features.cpu()
-        labels = labels.cpu()
-    feature = features.data.numpy()
-    label = labels.data.numpy()
-    label = np.reshape(label, (labels.size(0), 1))
-
-    if i == 0:
-        featureMatrixTest = np.copy(feature)
-        labelVectorTest = np.copy(label)
-    else:
-        featureMatrixTest = np.vstack([featureMatrixTest, feature])
-        labelVectorTest = np.vstack([labelVectorTest, label])
-
-print('Finished feature extraction for Test Set')
-
-# featureMatrix = scale(featureMatrix)
-# featureMatrixTest = scale(featureMatrixTest)
-
-
-# Defining Random Forest Claasifier
-clf = SVC(gamma='auto', C=1.0)
-
-# Train the Random Forest using Train Set of CIFAR-10 Dataset
-clf.fit(featureMatrix, np.ravel(labelVector))
-
-# Test with Random Forest for Test Set of CIFAR-10 Dataset
-labelVectorPredicted = clf.predict(featureMatrixTest)
-
-labelVectorTest = np.ravel(labelVectorTest)
-className = list(classes)
-print('GroundTruth', 'Predicted')
-print('--------', '--------')
-for i in range(10):
-    print(className[labelVectorTest[i]], className[labelVectorPredicted[i]])
-
-correct = (labelVectorPredicted == labelVectorTest).sum()
-print('Accuracy of the network on the test images: %d %%' % (
-        100 * correct / labelVectorTest.shape[0]))
-        
-class_correct = list(0. for i in range(5))
-class_total = list(0. for i in range(5))
-c = (labelVectorPredicted == labelVectorTest).squeeze()
-for i in range(labelVectorTest.shape[0]):
-    label = labelVectorTest[i]
-    class_correct[label] += c[i]
-    class_total[label] += 1
-    
-for i in range(5):
-    print('Accuracy of %5s : %2d %%' % (
-        classes[i], 100 * class_correct[i] / class_total[i]))
-
+# test the performance
+results = trial.evaluate(data_key=torchbearer.TEST_DATA)
+print(results)
+print("Saving weights")
+if save_weights: torch.save(model.state_dict(), args.save_weights_name)
