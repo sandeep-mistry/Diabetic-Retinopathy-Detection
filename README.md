@@ -12,6 +12,9 @@ Link to competition: https://www.kaggle.com/c/diabetic-retinopathy-detection
 
 
 # Requirements
+
+Python 3.6.8 was used during this project.
+
 ```
 pip install -r requirements.txt
 ```
